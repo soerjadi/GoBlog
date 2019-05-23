@@ -3,12 +3,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
 	_ "github.com/lib/pq"
+
+	"github.com/soerjadi/GoBlog/database"
+	h "github.com/soerjadi/GoBlog/handlers"
+	"github.com/soerjadi/GoBlog/utils"
 )
 
 var app *gin.Engine
@@ -20,32 +22,15 @@ func init() {
 		panic("Error loading .env file")
 	}
 
-	dbHost := getEnv("DBHOST", "localhost")
-	dbUser := getEnv("DBUSER", "")
-	dbPort := getEnv("DBPORT", "")
-	dbPass := getEnv("DBPASS", "")
-	dbName := getEnv("DBNAME", "")
-
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
-
-	db, err = sql.Open("postgres", connStr)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
+	database.InitDB()
 
 }
 
 func main() {
 
-	var hostIP = getEnv("HOST_IP", "127.0.0.1")
-	var port = getEnv("PORT", "8080")
-	var debug = getEnv("DEBUG", "true")
+	var hostIP = utils.GetEnv("HOST_IP", "127.0.0.1")
+	var port = utils.GetEnv("PORT", "8080")
+	var debug = utils.GetEnv("DEBUG", "true")
 
 	app = gin.Default()
 
@@ -59,16 +44,6 @@ func main() {
 
 }
 
-func getEnv(env, fallback string) string {
-	e := os.Getenv(env)
-
-	if e == "" {
-		return fallback
-	}
-
-	return e
-}
-
 func initializeRoutes(app *gin.Engine) {
 
 	app.GET("/", func(c *gin.Context) {
@@ -76,5 +51,7 @@ func initializeRoutes(app *gin.Engine) {
 			"message": "hello world",
 		})
 	})
+
+	app.GET("/user/info", h.UserInfo)
 
 }

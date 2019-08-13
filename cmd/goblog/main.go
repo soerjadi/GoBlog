@@ -1,29 +1,22 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/soerjadi/GoBlog/handlers"
 
-	"github.com/soerjadi/GoBlog/database"
-	h "github.com/soerjadi/GoBlog/handlers"
 	"github.com/soerjadi/GoBlog/utils"
 )
 
 var app *gin.Engine
-var db *sql.DB
 
 func init() {
 	err := godotenv.Load()
 	if err != nil {
 		panic("Error loading .env file")
 	}
-
-	database.InitDB()
-
 }
 
 func main() {
@@ -40,18 +33,12 @@ func main() {
 
 	initializeRoutes(app)
 
-	app.Run(fmt.Sprintf("%s:%s", hostIP, port))
+	_ = app.Run(fmt.Sprintf("%s:%s", hostIP, port))
 
 }
 
 func initializeRoutes(app *gin.Engine) {
 
-	app.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "hello world",
-		})
-	})
-
-	app.GET("/user/info", h.UserInfo)
+	handlers.UserRoutes(app)
 
 }

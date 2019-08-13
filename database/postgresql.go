@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	// import util
 	"github.com/joho/godotenv"
@@ -10,8 +11,13 @@ import (
 	"github.com/soerjadi/GoBlog/utils"
 )
 
-func InitDB() *sql.DB {
+type Impl struct{}
 
+func RDB() Database {
+	return &Impl{}
+}
+
+func (d Impl) InitDB() *sql.DB {
 	if err := godotenv.Load("../.env"); err == nil {
 		panic("Error loading .env file")
 	}
@@ -36,12 +42,10 @@ func InitDB() *sql.DB {
 	}
 
 	return db
-
 }
 
-func InitTestDB() *sql.DB {
-
-	if err := godotenv.Load("../.env"); err == nil {
+func (d Impl) InitTestDB() *sql.DB {
+	if err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/soerjadi/GoBlog/.env")); err != nil {
 		panic("Error loading .env file")
 	}
 
@@ -52,8 +56,6 @@ func InitTestDB() *sql.DB {
 	dbName := utils.GetEnv("DB_TEST", "")
 
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPass, dbHost, dbPort, dbName)
-
-	fmt.Println(connStr)
 
 	dbTest, err := sql.Open("postgres", connStr)
 
@@ -67,4 +69,23 @@ func InitTestDB() *sql.DB {
 	}
 
 	return dbTest
+}
+
+func DBTestRepository(conn *sql.DB) DBTest {
+	return &DBTestImpl{Conn: conn}
+}
+
+func (db *DBTestImpl) truncate(table string) error {
+	cmd := fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table)
+
+	_, err := db.Conn.Exec(cmd)
+	return err
+}
+
+func (db *DBTestImpl) Clean(tables ...string) {
+	for _, table := range tables {
+		if err := db.truncate(table); err != nil {
+			panic(err)
+		}
+	}
 }
